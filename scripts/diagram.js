@@ -593,13 +593,6 @@ class Diagram {
             item.initialize()
         }
 
-        guiGroup.append(
-            $(svgElement('path'))
-                .css('transform', 'translate(200px, 200px)')
-                .css('fill', 'red')
-                .attr('d', 'M 0 -10 v -5 l 2 2 z')
-        )
-
         Diagram.draw()
     }
 
