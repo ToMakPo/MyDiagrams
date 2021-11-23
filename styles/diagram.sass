@@ -1,0 +1,128 @@
+$gap: 5px
+
+#diagram
+    display: flex
+    flex-direction: row
+    flex-wrap: wrap-reverse
+    gap: $gap
+
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+
+    .hide
+        display: none
+
+#options
+    display: flex
+    flex-direction: column
+    flex-wrap: wrap
+    min-width: 200px
+    min-height: 200px
+    gap: $gap
+    
+    .options
+        padding: 5px
+        border: 1px solid black
+        display: flex
+        flex-direction: column
+        gap: $gap
+        flex: 0 0 auto
+        position: relative
+
+        &:hover > .open
+            opacity: 1
+
+        & > h3
+            margin: 0
+            font-weight: 500
+            font-size: 1.1em
+        
+        & > .open
+            opacity: 0
+            cursor: pointer
+            position: absolute
+            top: 10px
+            right: 5px
+            transition: transform 0.1s, opacity 0.3s, border-top-color 0.3s
+            width: 0
+            height: 0
+            border-left: 5px solid transparent
+            border-right: 5px solid transparent
+            border-top: 8px solid #666
+
+            &:hover
+                border-top-color: #000
+
+        &.close > .open
+            transform: rotate(90deg)
+    
+    .row
+        display: flex
+        flex-direction: row
+        gap: $gap
+
+    .col
+        display: flex
+        flex-direction: column
+        gap: $gap
+    
+    .no-gap
+        gap: 0
+    
+    @for $i from 1 through 12
+        .c#{$i}
+            width: #{($i / 0.12) + '%'}
+    
+    .spacer
+        flex: 1 1 auto
+    
+    label
+        flex: 0 0 auto
+        font-size: 0.8em
+    
+    input:not([type='checkbox']), select
+        flex: 1 1 auto
+    
+    button
+        padding: 5px
+
+#draw-area
+    border: 1px solid black
+
+    #grid
+        .grid-line
+            stroke-width: 1px
+            opacity: 0.5
+        
+        .grid-line.light
+            stroke: #bbb
+        
+        .grid-line.bold
+            stroke: #666
+        
+        .grid-dot
+            stroke-width: 0
+            opacity: 0.5
+        
+        .grid-dot.light
+            fill: #888888
+        
+        .grid-dot.bold
+            fill: #000000
+    
+    &:hover #edit-options-icon-button
+        opacity: 0.35
+    
+    #edit-options-icon-button
+        cursor: pointer
+        opacity: 0
+        transition: opacity 0.3s
+
+        path
+            fill: #426e88
+
+        &:hover
+            opacity: 1
+    
+    .item
+        .rotator
+            cursor: 

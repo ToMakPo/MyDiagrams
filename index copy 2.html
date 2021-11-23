@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram Maker</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            gap: 5px;
+        }
+
+        .c6 {
+            width: calc(50% - 2.5px);
+        }
+        hr {
+            width: 100%;
+        }
+
+        aside {
+            width: 200px;
+            border: 1px solid black;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 5px;
+        }
+        aside .options {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        aside .options div {
+            display: flex;
+            gap: 0 5px;
+        }
+        aside .options input {
+            padding: 5px;
+        }
+        aside .options label {
+            font-size: 0.8em;
+        }
+        aside .options .col {
+            flex-direction: column;
+        }
+        aside .options .row {
+            flex-direction: row;
+            align-items: center;
+        }
+        aside .options[data-selected-id=''] {
+            display: none;
+        }
+        aside .options:not(:first-child) {
+            border-top: 1px solid black;
+            padding-top: 5px;
+        }
+        aside button {
+            padding: 5px
+        }
+
+        .cursor-add {
+            cursor: copy;
+        }
+
+        svg {
+            border: 1px solid black;
+        }
+        .box {
+            fill: #ddd;
+            stroke: black;
+            z-index: 0;
+        }
+        .selected {
+            z-index: 99;
+        }
+        .selected :is(.main, .label) {
+            cursor: move;
+        }
+        .editor {
+            display: none;
+        }
+        .selected .editor {
+            display: initial;
+        }
+        .label {
+            font-family: monospace;
+            font-size: 20px;
+            fill: black;
+            stroke-width: 0;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            user-select: none;
+        }
+        .grip {
+            fill: #5dd;
+            stroke: #088;
+        }
+        .tl-grip, .br-grip {
+            cursor: nwse-resize;
+        }
+        .tr-grip, .bl-grip {
+            cursor: nesw-resize;
+        }
+        .cl-grip, .cr-grip {
+            cursor: ew-resize;
+        }
+        .tm-grip, .bm-grip {
+            cursor: ns-resize;
+        }
+        .arrow {
+            fill: #5dd;
+            stroke: #088;
+            opacity: 0.15;
+            cursor: pointer;
+        }
+        .arrow:hover, .arrow.selected {
+            opacity: 1;
+        }
+        .connection {
+            stroke: #088;
+        }
+        .grid-line {
+            stroke-width: 1px;
+        }
+        .grid-line.light {
+            stroke: #88888844;
+        }
+        .grid-line.bold {
+            stroke: #888888aa;
+        }
+    </style>
+</head>
+<body>
+    <aside id='options'>
+        <div id='global-options' class='options'>
+            <button id='add-box-button'>Add Node</button>
+            
+            <div id='grid-options' class="col">
+                <div class="row">
+                    <div class='col c6'>
+                        <label for='grid-spacing-input' data-tooltip='The spacing between each line.'>Spacing:</label>
+                        <input id='grid-spacing-input' type="number" min=10 max=1000/>
+                    </div>
+                    <div class='col c6'>
+                        <label for='grid-major-input' data-tooltip='The number of lines between each bold line.'>Major:</label>
+                        <input id='grid-major-input' type="number" min=0 max=1000/>
+                    </div>
+                </div>
+                <div>
+                    <input type="checkbox" id="grid-snap-input" value=true>
+                    <label for="grid-snap-input">Snap to grid</label>
+                </div>
+            </div>
+            <hr>
+            <div id='import-export-buttons' class="row">
+                <button id='import-button' class="c6">Import</button>
+                <button id='export-button' class="c6">Export</button>
+            </div>
+            <div id='import-input-area' class="col" style="gap: 5px">
+                <textarea id='import-text' cols="30" rows="10"></textarea>
+                <div class="row">
+                    <button id='save-import-button' class="c6">Save</button>
+                    <button id='cancel-import-button' class="c6">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id='box-options' class='options' data-selected-id=''>
+            <div class='row'>
+                <label for='box-id-display'>Id:</label>
+                <span id='box-id-display' style="font-size: 0.8em;"></span>
+            </div>
+            <div class='col'>
+                <label for='box-text-input'>Text:</label>
+                <input id='box-text-input' type="text"/>
+            </div>
+            <div class='row'>
+                <div class='col c6'>
+                    <label for='box-width-input'>Width:</label>
+                    <input id='box-width-input' type="number" min=10 max=1000/>
+                </div>
+                <div class='col c6'>
+                    <label for='box-height-input'>Height:</label>
+                    <input id='box-height-input' type="number" min=10 max=1000/>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col c6'>
+                    <label for='box-x-input'>X:</label>
+                    <input id='box-x-input' type="number" min=10 max=1000/>
+                </div>
+                <div class='col c6'>
+                    <label for='box-y-input'>Y:</label>
+                    <input id='box-y-input' type="number" min=10 max=1000/>
+                </div>
+            </div>
+            <div class='col'>
+                <label for='box-border-radius-input'>Border Radius:</label>
+                <input id='box-border-radius-input' type="number" min=0 max=20/>
+            </div>
+        </div>
+    </aside>
+    <svg>
+        <g id='grid'></g>
+        <g id='connections'></g>
+        <g id='boxes'></g>
+        <g id='gui'></g>
+    </svg>
+
+    <script>
+        const canvas = { width: 800, height: 800 }
+        const mouse = { x: 0, y: 0 }
+        let offset = { x: 0, y: 0 }
+
+        const boxes = {}
+
+        let canDrag = false
+        let isDragging = false
+
+        let canChangeSize = false
+        let isChangingSize = false
+
+        let canConnect = false
+
+        let selected = null
+        let selectedGrip = null
+
+        let addingBox = false
+
+        let snap = 10
+
+        function clamp(value, high, low=0) {
+            return Math.min(Math.max(value, low), high)
+        }
+
+        class Box {
+            #ID
+            #TEXT
+            #WIDTH
+            #HEIGHT
+            #X
+            #Y
+            #PADDING
+            #BORDER_RADIUS
+            #GRIP_RADIUS
+
+            static #LIST = {}
+
+            constructor() {
+                this.#ID = Box.createId()
+                this.text = ''
+                this.width = 200
+                this.height = 40
+                this.x = 0
+                this.y = 0
+                this.padding = []
+                this.borderRadius = 5
+                this.gripRadius = 4
+                this.CONNECTIONS = []
+            }
+
+            get id() {
+                return this.#ID
+            }
+            static createId() {
+                for (let i = 0; i < 100; i++) {
+                    const id = Math.floor(Math.random() * 36**9).toString(36).toUpperCase().padStart(9, '0')
+
+                    if (!Box.#LIST.hasOwnProperty(id)) {
+                        return id
+                    }
+                }
+                throw 'ERROR: Could not create box id.'
+            }
+
+            get text() {
+                return this.#TEXT
+            }
+            set text(value) {
+                this.#TEXT = value.toString()
+            }
+
+            get x() {
+                return this.#X
+            }
+            set x(value) {
+                this.#X = getSnap(clamp(value, canvas.width - this.width))
+            }
+
+            get y() {
+                return this.#Y
+            }
+            set y(value) {
+                this.#Y = getSnap(clamp(value, canvas.height - this.height))
+            }
+
+            get width() {
+                if (this.#WIDTH != 'auto') return this.#WIDTH
+                if (this.element == null) return getSnap(100)
+                
+                let lPad = 0
+                let rPad = 0
+                
+                const labelWidth = this.element.find('.label')[0].getBoundingClientRect().width
+
+                if (this.#PADDING.length == 1) {
+                    rPad = this.#PADDING[0]
+                    lPad = this.#PADDING[0]
+                } else
+                if (this.#PADDING.length == 2) {
+                    rPad = this.#PADDING[1]
+                    lPad = this.#PADDING[1]
+                } else
+                if (this.#PADDING.length == 3) {
+                    rPad = this.#PADDING[1]
+                    lPad = this.#PADDING[1]
+                } else
+                if (this.#PADDING.length == 4) {
+                    rPad = this.#PADDING[1]
+                    lPad = this.#PADDING[3]
+                }
+
+                return lPad + labelWidth + rPad
+            }
+            set width(value) {
+                if (value != 'auto') {
+                    value = clamp(value, 1000, Math.max(getSnap(50), snap))
+                }
+                this.#WIDTH = getSnap(value)
+            }
+
+            get height() {
+                if (this.#HEIGHT != 'auto') return this.#HEIGHT
+                if (this.element == null) return getSnap(20)
+                
+                let tPad = 0
+                let bPad = 0
+
+                const labelHeight = this.element.find('.label')[0].getBoundingClientRect().height
+
+                if (this.#PADDING.length == 1) {
+                    bPad = this.#PADDING[0]
+                    tPad = this.#PADDING[0]
+                } else
+                if (this.#PADDING.length == 2) {
+                    bPad = this.#PADDING[0]
+                    tPad = this.#PADDING[0]
+                } else
+                if (this.#PADDING.length == 3) {
+                    bPad = this.#PADDING[0]
+                    tPad = this.#PADDING[2]
+                } else
+                if (this.#PADDING.length == 4) {
+                    bPad = this.#PADDING[0]
+                    tPad = this.#PADDING[2]
+                }
+
+                return tPad + labelHeight + bPad
+            }
+            set height(value) {
+                if (value != 'auto') {
+                    value = clamp(value, 1000, Math.max(getSnap(20), snap))
+                }
+                this.#HEIGHT = getSnap(value)
+            }
+
+            get padding() {
+                return this.#PADDING
+            }
+            set padding(value) {
+                value = value == 0 ? [0] : value || [5, 20]
+
+                if (typeof value === 'number') {
+                    value = [value]
+                } else
+                if (typeof value === 'string') {
+                    if (value == '')
+                        value = []
+                    else 
+                        value = value
+                            .replaceAll(/!(\d*.?\d*)+/g, ' ') // convert all groups of non-number characters to a space
+                            .trim() // remove spaces from the front and back
+                            .split(' ') // split the string along the spaces into an array
+                            .map(x => x * 1) // convert each numeric string into a number
+                            .filter(x => !isNaN(x)) // remove any item that was not converted to a number
+                }
+
+                if (value.length > 4) {
+                    value.length = 4
+                }
+
+                this.#PADDING = value.map(x => clamp(x, 500))
+            }
+
+            get borderRadius() {
+                return this.#BORDER_RADIUS
+            }
+            set borderRadius(value) {
+                if (value.toString().at(-1) == '%')
+                    this.#BORDER_RADIUS = value
+                else
+                    this.#BORDER_RADIUS = clamp(value, Math.min(500, this.width, this.height))
+            }
+
+            get gripRadius() {
+                return this.#GRIP_RADIUS
+            }
+            set gripRadius(value) {
+                this.#GRIP_RADIUS = clamp(value, Math.min(500, this.width, this.height) / 3, 2)
+            }
+
+            get element() {
+                const value = $('#box-' + this.id)
+                return value.length > 0 ? value : null
+            }
+
+            get tlPoint() {
+                return {
+                    x: this.x,
+                    y: this.y
+                }
+            }
+            get tmPoint() {
+                return {
+                    x: this.x + this.width / 2,
+                    y: this.y
+                }
+            }
+            get trPoint() {
+                return {
+                    x: this.x + this.width,
+                    y: this.y
+                }
+            }
+            get clPoint() {
+                return {
+                    x: this.x,
+                    y: this.y + this.height / 2
+                }
+            }
+            get cmPoint() {
+                return {
+                    x: this.x + this.width / 2,
+                    y: this.y + this.height / 2
+                }
+            }
+            get crPoint() {
+                return {
+                    x: this.x + this.width,
+                    y: this.y + this.height / 2
+                }
+            }
+            get blPoint() {
+                return {
+                    x: this.x,
+                    y: this.y + this.height
+                }
+            }
+            get bmPoint() {
+                return {
+                    x: this.x + this.width / 2,
+                    y: this.y + this.height
+                }
+            }
+            get brPoint() {
+                return {
+                    x: this.x + this.width,
+                    y: this.y + this.height
+                }
+            }
+
+            get connections() {
+                return Connection.getAllFromBoxId(this.id)
+            }
+
+            toString() {
+                return JSON.stringify(this.toJSON())
+            }
+            toJSON() {
+                const data = {
+                    id: this.#ID,
+                    text: this.#TEXT,
+                    x: this.#X,
+                    y: this.#Y,
+                    width: this.#WIDTH,
+                    height: this.#HEIGHT,
+                    padding: this.#PADDING,
+                    borderRadius: this.#BORDER_RADIUS,
+                    gripRadius: this.#GRIP_RADIUS,
+                }
+                return data
+            }
+            static fromString(string) {
+                return fromJSON(JSON.parse(string))
+            }
+            static fromJSON(data) {
+                const box = new Box() 
+                box.#ID = data.id || Box.createId()
+                box.text = data.text || ''
+                box.width = data.width || 200
+                box.height = data.height || 40
+                box.x = data.x || 0
+                box.y = data.y || 0
+                box.padding = data.padding || []
+                box.borderRadius = data.borderRadius || 5
+                box.gripRadius = data.gripRadius || 4
+
+                box.save()
+                return box
+            }
+
+            select() {
+                $('.selected').removeClass('selected')
+                selected = this.element
+                selected.addClass('selected')
+                document.querySelector('#box-options').dataset.selectedId = this.id
+                this.writeToOptions()
+            }
+
+            writeToOptions() {
+                $('#box-id-display').text(this.id)
+                $('#box-text-input').val(this.text)
+                $('#box-width-input').val(this.width)
+                $('#box-height-input').val(this.height)
+                $('#box-x-input').val(this.x)
+                $('#box-y-input').val(this.y)
+                $('#box-border-radius-input').val(this.borderRadius)
+            }
+
+            save() {
+                Box.#LIST[this.id] = this
+                
+                if (this.element != null) this.element.remove()
+                
+                const html = `<g id='box-${this.id}'class='box' data-id='${this.id}'>
+                    <g class='main' onClick='boxMain_Click(this)' onmousedown='boxMain_MouseDown(this)'>
+                        <rect class='body'></rect>
+                        <text class='label'></text>
+                    </g>
+                    <g class='editor'>
+                        <g class='grips'>
+                            <circle class='grip tl-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip tm-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip tr-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip cl-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip cr-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip bl-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip bm-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip br-grip' onmousedown='boxGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                        </g>
+                        <g class='arrows'>
+                            <path class='arrow t-arrow' onClick='boxArrow_Click(this)' d=''/>
+                            <path class='arrow b-arrow' onClick='boxArrow_Click(this)' d=''/>
+                            <path class='arrow l-arrow' onClick='boxArrow_Click(this)' d=''/>
+                            <path class='arrow r-arrow' onClick='boxArrow_Click(this)' d=''/>
+                        </g>
+                    </g>
+                </g>`
+                
+                document.querySelector('svg #boxes').innerHTML += html
+                
+                this.update()
+            }
+
+            remove() {
+                delete Box.#LIST[this.id]
+
+                for (const connection of this.connections) {
+                    connection.remove()
+                }
+            }
+
+            static get(id) {
+                return Box.#LIST[id]
+            }
+            static getAll() {
+                return Object.values(Box.#LIST)
+            }
+
+            update() {
+                const element = this.element
+                if (element == null) return 
+                this.element.css('transform', `translate(${this.x}px, ${this.y}px)`)
+
+                const size = {
+                    width: this.width,
+                    height: this.height
+                }
+
+                const body = element.find('.body')
+                body.attr('width', size.width)
+                body.attr('height', size.height)
+                body.attr('rx', this.borderRadius)
+                body.attr('ry', this.borderRadius)
+
+                const label = element.find('.label')
+                label.attr('x', size.width / 2)
+                label.attr('y', size.height / 2)
+                label.text(this.text)
+
+                const tlGrip = element.find('.tl-grip')
+                tlGrip.attr('r', this.gripRadius)
+
+                const tmGrip = element.find('.tm-grip')
+                tmGrip.attr('cx', size.width / 2)
+                tmGrip.attr('r', this.gripRadius)
+
+                const trGrip = element.find('.tr-grip')
+                trGrip.attr('cx', size.width)
+                trGrip.attr('r', this.gripRadius)
+
+                const clGrip = element.find('.cl-grip')
+                clGrip.attr('cy', size.height / 2)
+                clGrip.attr('r', this.gripRadius)
+
+                const crGrip = element.find('.cr-grip')
+                crGrip.attr('cx', size.width)
+                crGrip.attr('cy', size.height / 2)
+                crGrip.attr('r', this.gripRadius)
+
+                const blGrip = element.find('.bl-grip')
+                blGrip.attr('cy', size.height)
+                blGrip.attr('r', this.gripRadius)
+
+                const bmGrip = element.find('.bm-grip')
+                bmGrip.attr('cx', size.width / 2)
+                bmGrip.attr('cy', size.height)
+                bmGrip.attr('r', this.gripRadius)
+
+                const brGrip = element.find('.br-grip')
+                brGrip.attr('cx', size.width)
+                brGrip.attr('cy', size.height)
+                brGrip.attr('r', this.gripRadius)
+
+                const tArrow = element.find('.t-arrow')
+                tArrow.attr('d', `M ${size.width / 2 + 5} -10 v -15 h 5 l -10 -10 l -10 10 h 5 v 15 z`)
+
+                const bArrow = element.find('.b-arrow')
+                bArrow.attr('d', `M ${size.width / 2 + 5} ${size.height + 10} v 15 h 5 l -10 10 l -10 -10 h 5 v -15 z`)
+
+                const lArrow = element.find('.l-arrow')
+                lArrow.attr('d', `M -10 ${size.height / 2 - 5} h -15 v -5 l -10 10 l 10 10 v -5 h 15 z`)
+
+                const rArrow = element.find('.r-arrow')
+                rArrow.attr('d', `M ${size.width + 10} ${size.height / 2 - 5} h 15 v -5 l 10 10 l -10 10 v -5 h -15 z`)
+
+                for (const connection of this.connections) {
+                    connection.update()
+                }
+
+                this.writeToOptions()
+            }
+        }
+
+        function createBox() {
+            const box = new Box()
+
+            text = value => {
+                box.text = value
+                return this
+            }
+
+            width = function(value) {
+                box.width = value
+                return this
+            }
+
+            height = function(value) {
+                box.height = value
+                return this
+            }
+
+            x = function(value) {
+                box.x = value
+                return this
+            }
+
+            y = function(value) {
+                box.y = value
+                return this
+            }
+
+            padding = function(...values) {
+                box.padding = values
+                return this
+            }
+
+            borderRadius = function(value) {
+                box.borderRadius = value
+                return this
+            }
+
+            gripRadius = function(value) {
+                box.gripRadius = value
+                return this
+            }
+
+            build = function() {
+                box.save()
+                return box
+            }
+
+            return this
+        }
+
+        class Connection {
+            #ID
+            #FROM_BOX
+            #TO_BOX
+            #FROM_END
+            #TO_END
+            #WIDTH
+            #END_SIZE
+            #BEND
+
+            static #LIST = {}
+            static endTypes = {
+                NORMAL: 'normal',
+                ARROW: 'arrow'
+            }
+            static bendTypes = {
+                STRAIT: 'strait',
+                ANGLED: 'angled',
+                CURVED: 'curved'
+            }
+
+            constructor(fromBox, toBox) {
+                this.#ID = Connection.createId()
+                this.fromBox = fromBox
+                this.toBox = toBox
+                this.fromEnd = Connection.endTypes.NORMAL
+                this.toEnd = Connection.endTypes.NORMAL
+                this.width = 2
+                this.endSize = 8
+                this.bend = Connection.bendTypes.ANGLED
+            }
+
+            get id() {
+                return this.#ID
+            }
+            static createId() {
+                for (let i = 0; i < 100; i++) {
+                    const id = Math.floor(Math.random() * 36**9).toString(36).toUpperCase().padStart(9, '0')
+
+                    if (!Connection.#LIST.hasOwnProperty(id)) {
+                        return id
+                    }
+                }
+                throw 'ERROR: Could not create box id.'
+            }
+
+            get fromBox() {
+                return this.#FROM_BOX
+            }
+            set fromBox(box) {
+                if (this.fromBox != undefined && !Connection.isUnique(this.fromBox, box)) return
+                box.connections[this.id] = box
+                this.#FROM_BOX = box
+            }
+            
+            get toBox() {
+                return this.#TO_BOX
+            }
+            set toBox(box) {
+                if (this.toBox != undefined && !Connection.isUnique(this.fromBox, box)) return
+                box.connections[this.id] = box
+                this.#TO_BOX = box
+            }
+
+            get fromEnd() {
+                return this.#FROM_END
+            }
+            set fromEnd(endType) {
+                if (!Object.values(Connection.endTypes).includes(endType)) {
+                    endType = Connection.endTypes.NORMAL
+                }
+                this.#FROM_END = endType
+            }
+            
+            get toEnd() {
+                return this.#TO_END
+            }
+            set toEnd(endType) {
+                if (!Object.values(Connection.endTypes).includes(endType)) {
+                    endType = Connection.endTypes.NORMAL
+                }
+                this.#TO_END = endType
+            }
+            
+            get width() {
+                return this.#WIDTH
+            }
+            set width(value) {
+                this.#WIDTH = clamp(value, 25, 1)
+            }
+            
+            get endSize() {
+                return this.#END_SIZE
+            }
+            set endSize(value) {
+                this.#END_SIZE = clamp(value, 75, 3)
+            }
+
+            get bend() {
+                return this.#BEND
+            }
+            set bend(bendType) {
+                if (!Object.values(Connection.bendTypes).includes(bendType)) {
+                    bendType = Connection.bendTypes.CURVED
+                }
+                this.#BEND = bendType
+            }
+            
+            get element() {
+                const value = $('#connection-' + this.id)
+                return value.length > 0 ? value : null
+            }
+
+            static isUnique(box0, box1, exclude=null) {
+                const exId = exclude == null ? '' : exclude.id
+                const ids = [box0.id, box1.id]
+                for (const c of Object.values(Connection.#LIST)) {
+                    if (c.id != exId && ids.includes(c.fromBox.id) && ids.includes(c.toBox.id)) {
+                        return false
+                    }
+                }
+
+                return true
+            }
+            
+            save() {
+                Connection.#LIST[this.id] = this
+                
+                if (this.element != null) this.element.remove()
+                
+                const html = `<g id='connection-${this.id}'class='connection' data-id='${this.id}'>
+                    <g class='main' onClick='connectionMain_Click(this)' onmousedown='connectionMain_MouseDown(this)'>
+                        <path class='line' d=''/>
+                        <path class='end from-end' d=''/>
+                        <path class='end to-end' d=''/>
+                    </g>
+                    <g class='editor'>
+                        <g class='grips'>
+                            <circle class='grip from-grip' onmousedown='connectionGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                            <circle class='grip to-grip' onmousedown='connectionGrip_MouseDown(this)' cx=0 cy=0 r=5></circle>
+                        </g>
+                    </g>
+                </g>`
+                
+                document.querySelector('svg #connections').innerHTML += html
+                
+                this.update()
+            }
+
+            remove() {
+                delete Connection.#LIST[this.id]
+            }
+
+            update() {
+                const element = this.element
+                if (element == null) return
+
+                const line = element.find('.line')
+
+                const getPoints = _ => {
+                    const findAll = box => {
+                        return [
+                            box.tmPoint,
+                            box.bmPoint,
+                            box.crPoint,
+                            box.clPoint,
+                            box.trPoint,
+                            box.brPoint,
+                            box.tlPoint,
+                            box.blPoint
+                        ]
+                    }
+
+                    const b0 = findAll(this.fromBox)
+                    const b1 = findAll(this.toBox)
+
+                    let minDist = 99999
+                    let min0 = null
+                    let min1 = null
+
+                    for (const p0 of b0)
+                    for (const p1 of b1) {
+                        const a = p0.x - p1.x
+                        const b = p0.y - p1.y
+                        const c = Math.sqrt( a*a + b*b )
+
+                        if (c < minDist) {
+                            minDist = c
+                            min0 = p0
+                            min1 = p1
+                        }
+                    }
+                    
+                    return [min0, min1]
+                }
+
+                const [fPoint, tPoint] = getPoints()
+
+                let lineString = ''
+
+                switch (this.bend) {
+                    default:
+                        lineString = `M ${fPoint.x} ${fPoint.y} L ${tPoint.x} ${tPoint.y}`
+                }
+
+                const body = element.find('.line')
+                body.attr('stroke-width', this.width)
+                body.attr('d', lineString)
+            }
+
+            static get(id) {
+                return Connection.#LIST[id]
+            }
+
+            static getAll() {
+                return Object.assign({}, Connection.#LIST)
+            }
+
+            static getAllFromBoxId(boxId) {
+                return Object.values(Connection.#LIST).filter(x => x.fromBox.id == boxId || x.toBox.id == boxId)
+            }
+
+            select() {
+                $('.selected').removeClass('selected')
+
+                selected = this
+                this.element.addClass('selected')
+            }
+        }
+
+        function boxMain_Click(self) {
+            const parent = $(self).parent()
+
+            if (isDragging) {
+                canDrag = false
+                isDragging = false
+            } else if (isChangingSize) {
+                canChangeSize = false
+                isChangingSize = false
+            } else if (canConnect) {
+                const fromId = selected.data('id')
+                const toId = parent.data('id')
+                if (fromId != toId) {
+                    const fromBox = Box.get(fromId)
+                    const toBox = Box.get(toId)
+
+                    if (!Connection.isUnique(fromBox, toBox)) {
+                        $('.arrow.selected').removeClass('selected')
+                        return
+                    }
+
+                    const connection = new Connection(fromBox, toBox)
+
+                    connection.save()
+
+                    $('.selected').removeClass('selected')
+                    selected = null
+                } else {
+                    $('.selected').removeClass('selected')
+                    selected = null
+                }
+                canConnect = false
+            } else if (parent.hasClass('selected')) {
+                $('.selected').removeClass('selected')
+                selected = null
+            } else {
+                Box.get(parent.data('id')).select()
+            }
+        }
+
+        function boxMain_MouseDown(self) {
+            const parent = $(self).parent()
+            const id = parent.data('id')
+            const box = Box.get(id)
+
+            if (parent.hasClass('selected')) {
+                canDrag = true
+                canChangeSize = false
+                canConnect = false
+
+                offset = {
+                    x: mouse.x - box.x,
+                    y: mouse.y - box.y
+                }
+            }
+        }
+
+        function boxGrip_MouseDown(self) {
+            const grip = $(self)
+            const parent = grip.parent().parent().parent()
+            if (parent.hasClass('selected')) {
+                const id = parent.data('id')
+                const box = Box.get(id)
+
+                canDrag = false
+                canChangeSize = true
+                canConnect = false
+
+                selectedGrip = grip
+            }
+        }
+
+        function boxArrow_Click(self) {
+            const arrow = $(self)
+            const parent = arrow.parent().parent().parent()
+            if (parent.hasClass('selected')) {
+                arrow.addClass('selected')
+
+                const id = parent.data('id')
+                const box = Box.get(id)
+
+                canDrag = false
+                canChangeSize = false
+                canConnect = true
+            }
+        }
+
+        function connectionMain_Click(self) {
+            
+        }
+
+        function connectionMain_MouseDown(self) {
+            
+        }
+
+        function connectionGrip_MouseDown(self) {
+            
+        }
+
+        function importDiagram() {
+
+        }
+
+        function exportDiagram(filename) {
+            const data = {}
+
+            data.boxes = Box.getAll().map(box => box.toJSON())
+
+            const jsonStr = JSON.stringify(data);
+
+            let element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonStr));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
+            console.log(jsonStr);
+        }
+
+        $('#add-box-button').on('click', _ => {
+            addingBox = true
+            $('svg').addClass('cursor-add')
+        })
+
+        $('#import-button').on('click', _ => {
+            $('#import-export-buttons').hide()
+            $('#import-input-area').show()
+        })
+
+        $('#export-button').on('click', _ => {
+        })
+
+        $('#import-input-area').hide()
+
+        $('#import-button').on('click', _ => {
+            $('#import-export-buttons').hide()
+            $('#import-input-area').show()
+        })
+
+        $('#box-text-input').on('input', event => {
+            const value = event.target.value
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.text = value
+            box.update()
+        })
+        $('#box-width-input').on('change', event => {
+            const value = event.target.value
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.width = value
+            box.update()
+        })
+        $('#box-height-input').on('change', event => {
+            const value = event.target.value
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.height = value
+            box.update()
+        })
+        $('#box-x-input').on('change', event => {
+            const value = event.target.value
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.x = value
+            box.update()
+        })
+        $('#box-y-input').on('change', event => {
+            const value = event.target.value
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.y = value
+            box.update()
+        })
+        $('#box-border-radius-input').on('input', event => {
+            const value = event.target.value
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.borderRadius = value
+            box.update()
+        }).on('focus', event => {
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.element.find('.editor').css('opacity', 0.35)
+        }).on('blur', event => {
+            const id = selected.data('id')
+            const box = Box.get(id)
+
+            box.element.find('.editor').css('opacity', 1)
+        })
+
+        function drag() {
+            if (canDrag) {
+                isDragging = true
+
+                const id = selected.data('id')
+                const box = Box.get(id)
+
+                box.x = clamp(mouse.x - offset.x, canvas.width - box.width)
+                box.y = clamp(mouse.y - offset.y, canvas.height - box.height)
+
+                box.update()
+            }
+        }
+
+        function changeSize() {
+            if (canChangeSize) {
+                isChangingSize = true
+
+                const id = selected.data('id')
+                const box = Box.get(id)
+                const [vert, horz] = selectedGrip.attr('class').split(/\s+/)[1].split('-')[0].split('')
+
+                if (vert == 't') {
+                    const temp = box.y
+                    if (box.height > Math.max(snap, getSnap(20)) || box.y > mouse.y)
+                        box.y = mouse.y
+                    box.height += temp - box.y
+                }
+                else if (vert == 'b') {
+                    box.height = mouse.y - box.y
+                }
+
+                if (horz == 'l') {
+                    const temp = box.x
+                    if (box.width > Math.max(snap, getSnap(50)) || box.x > mouse.x)
+                        box.x = mouse.x
+                    box.width += temp - box.x
+                }
+                else if (horz == 'r') {
+                    box.width = mouse.x - box.x
+                }
+
+                box.update()
+            }
+        }
+        
+        function getSnap(value) {
+            return snap > 0 ? Math.round(value / snap) * snap : value
+        }
+
+        $('svg')
+            .attr('width', canvas.width)
+            .attr('height', canvas.height)
+            .mousemove(event => {
+                mouse.x = event.offsetX
+                mouse.y = event.offsetY
+
+                drag()
+                changeSize()
+            })
+            .mouseup(function() {
+                canDrag = false
+                canChangeSize = false
+            })
+            .click(function() {
+                if (addingBox) {
+                    addingBox = false
+                    
+                    $('svg').removeClass('cursor-add')
+
+                    const box = createBox().x(mouse.x - 100).y(mouse.y - 20).build()
+                    box.select()
+                    $('#box-text-input').focus()
+                }
+            })
+        
+        const grid = document.querySelector('svg #grid')
+        const space = snap >= 5 ? snap : 10
+        const bold = 5
+        for (let x = space, c = 1; x < canvas.height; x+=space, c++) {
+            const width = c % bold == 0 ? 2 : 0
+            const type = c % bold == 0 ? 'bold' : 'light'
+            
+            const html = `<line class='grid-line ${type}' x1=${x} y1=0 x2=${x} y2=${canvas.height}>`
+            grid.innerHTML += html
+        }
+        for (let y = space, c = 1; y < canvas.width; y+=space, c++) {
+            const width = c % bold == 0 ? 2 : 0
+            const type = c % bold == 0 ? 'bold' : 'light'
+            
+            const html = `<line class='grid-line ${type}' x1=0 y1=${y} x2=${canvas.width} y2=${y}>`
+            grid.innerHTML += html
+        }
+        
+        $(window).on('load', function() {
+            createBox().text('Love').x(50).y(50).build()
+            createBox().text('Hate').x(50).y(250).build()
+            createBox().text('Frost').x(150).y(150).build()
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+#diagram {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap-reverse;
+  gap: 5px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#diagram .hide {
+  display: none;
+}
+
+#options {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  min-width: 200px;
+  min-height: 200px;
+  gap: 5px;
+}
+
+#options .options {
+  padding: 5px;
+  border: 1px solid black;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+#options .options:hover > .open {
+  opacity: 1;
+}
+
+#options .options > h3 {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1.1em;
+}
+
+#options .options > .open {
+  opacity: 0;
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 5px;
+  transition: transform 0.1s, opacity 0.3s, border-top-color 0.3s;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid #666;
+}
+
+#options .options > .open:hover {
+  border-top-color: #000;
+}
+
+#options .options.close > .open {
+  transform: rotate(90deg);
+}
+
+#options .row {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+
+#options .col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#options .no-gap {
+  gap: 0;
+}
+
+#options .c1 {
+  width: 8.33333%;
+}
+
+#options .c2 {
+  width: 16.66667%;
+}
+
+#options .c3 {
+  width: 25%;
+}
+
+#options .c4 {
+  width: 33.33333%;
+}
+
+#options .c5 {
+  width: 41.66667%;
+}
+
+#options .c6 {
+  width: 50%;
+}
+
+#options .c7 {
+  width: 58.33333%;
+}
+
+#options .c8 {
+  width: 66.66667%;
+}
+
+#options .c9 {
+  width: 75%;
+}
+
+#options .c10 {
+  width: 83.33333%;
+}
+
+#options .c11 {
+  width: 91.66667%;
+}
+
+#options .c12 {
+  width: 100%;
+}
+
+#options .spacer {
+  flex: 1 1 auto;
+}
+
+#options label {
+  flex: 0 0 auto;
+  font-size: 0.8em;
+}
+
+#options input:not([type='checkbox']), #options select {
+  flex: 1 1 auto;
+}
+
+#options button {
+  padding: 5px;
+}
+
+#draw-area {
+  border: 1px solid black;
+}
+
+#draw-area #grid .grid-line {
+  stroke-width: 1px;
+  opacity: 0.5;
+}
+
+#draw-area #grid .grid-line.light {
+  stroke: #bbb;
+}
+
+#draw-area #grid .grid-line.bold {
+  stroke: #666;
+}
+
+#draw-area #grid .grid-dot {
+  stroke-width: 0;
+  opacity: 0.5;
+}
+
+#draw-area #grid .grid-dot.light {
+  fill: #888888;
+}
+
+#draw-area #grid .grid-dot.bold {
+  fill: #000000;
+}
+
+#draw-area:hover #edit-options-icon-button {
+  opacity: 0.35;
+}
+
+#draw-area #edit-options-icon-button {
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#draw-area #edit-options-icon-button path {
+  fill: #426e88;
+}
+
+#draw-area #edit-options-icon-button:hover {
+  opacity: 1;
+}
