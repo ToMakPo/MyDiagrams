@@ -257,8 +257,6 @@ class Diagram {
      * @param {boolean} value
      */
     static set edit(value) {
-        console.log({oldV:Diagram.#edit, newV: value});
-
         Diagram.#edit = value
 
         if (value) {
@@ -338,9 +336,8 @@ class Diagram {
      */
     static initialize() {
         $(document).click(Diagram.#documnet_Click)
-
+    
         const diagram = $('#diagram').empty()
-        
         const options = $('<aside>')
             .attr('id', 'options')
             .addClass('c3')
@@ -726,7 +723,6 @@ class Diagram {
 
         if (targetId != 'new-component-button' && Diagram.#canCreateComponent) {
             Diagram.#canCreateComponent = false
-            console.log('#documnet_Click() > #canCreateComponent:', Diagram.#canCreateComponent);
         }
     }
 
@@ -778,12 +774,10 @@ class Diagram {
         event.stopPropagation();
         if (Diagram.#canCreateComponent) {
             Diagram.#canCreateComponent = false
-            console.log('#drawArea_Click() > #canCreateComponent:', Diagram.#canCreateComponent);
         }
     }
     static #newComponentButton_Click(event) {
         Diagram.#canCreateComponent = true
-        console.log('#newComponentButton_Click() > #canCreateComponent:', Diagram.#canCreateComponent);
     }
     static #createComponent() {}
 }
