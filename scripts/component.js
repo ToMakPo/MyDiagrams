@@ -9,10 +9,13 @@ class Component extends Item {
     #y
     #shape = 'rectangle'
     #color
+    #strokeStyle
     #angle
     #flipped
     #inverted
     #turned
+
+    static #strokeStyles = ['solid', 'dash', 'none']
 
     static #shapes = {
         rectangle: { // ▭
@@ -306,25 +309,71 @@ class Component extends Item {
         element.append(main, gui)
 
         const createCorner = name => {
-            const rotatorSize = 20
+            const x = (name[1] == 'l' ? -1 : name[1] == 'r' ? 1 : 0)
+            const y = (name[0] == 't' ? -1 : name[0] == 'b' ? 1 : 0)
+
+
+            const rotator = (size) => {
+                const rx = Math.round(size * 0.75) * x
+                const ry = Math.round(size * 0.75) * y
+                const ix = Math.round(size * 0.52509)
+                const iy = Math.round(size * 0.17151)
+                const ox = Math.round(size * 0.92151)
+                const oy = Math.round(size * 0.22491)
+
+                return $(svgElement('g'))
+                    .addClass('rotator')
+                    .attr('fill', 'none')
+                    .append(
+                        $(svgElement('circle')) //TODO: remove this
+                            .attr('cx', 0)
+                            .attr('cy', 0)
+                            .attr('r', 1),
+                        $(svgElement('rect'))
+                            .attr('x', size * x)
+                            .attr('y', size * y)
+                            .attr('width', size)
+                            .attr('height', size),
+                        $(svgElement('path'))
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 2)
+                            .attr('d', [
+                                'M', rx, 0, 'A', rx, ry, 0, 0, Math.abs(x + y) / 2, 0, ry,
+                                'M', ix * x, iy * y, rx, 0, ox * x, oy * y,
+                                'M', iy * x, ix * y, 0, ry, oy * x, ox * y
+                            ].join(' '))
+                    )
+            }
+            
+            const handle = (size) => {
+                return $(svgElement('rect'))
+                    .addClass('handle')
+                    .attr('fill', '#3c6ab5')
+                    .attr('x', -size / 2)
+                    .attr('y', -size / 2)
+                    .attr('rx', 2)
+                    .attr('width', size)
+                    .attr('height', size)
+            }
+
             return $(svgElement('g'))
                 .addClass('corner')
                 .addClass(name + '-corner')
-                .append(
-                    $(svgElement('rect'))
-                        .addClass('rotator')
-                        .attr('x', -rotatorSize)
-                        .attr('y', -rotatorSize)
-                        .attr('width', rotatorSize)
-                        .attr('width', rotatorSize)
-                )
+                .append(rotator(20), handle(10))
         }
 
         const guiCorners = $(svgElement('g'))
             .addClass('corners')
             .append(
                 $(svgElement('rect'))
-                    .addClass('')
+                    .addClass('selected-outline')
+                    .attr('stroke', 'blue')
+                    .attr('strokeWidth', 2)
+                    .attr('fill', 'none'),
+                createCorner('tl'),
+                createCorner('tr'),
+                createCorner('br'),
+                createCorner('bl')
             )
 
         this.draw()
