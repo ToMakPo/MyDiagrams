@@ -21,6 +21,7 @@ class Diagram {
     static #items = {}
     static #itemsByType = {}
     static #edit = true
+    static #canEdit = true
     static #selectedItem = null
     static #snapToAngle = true
     static #snapAngle = 5
@@ -257,22 +258,41 @@ class Diagram {
      * @param {boolean} value
      */
     static set edit(value) {
-        Diagram.#edit = value
+        Diagram.#edit = this.canEdit ? value : false
 
         if (value) {
-            $('#options').show(Diagram.#duration)
+            $('#options').show(300)
         } else {
-            $('#options').hide(Diagram.#duration)
+            $('#options').hide(300)
         }
 
         const timeline = anime.timeline({
-            duration: 1000
+            duration: 2000
         })
 
         timeline.add({
             targets: '#edit-options-icon-button path',
             d: [{value: value ? closeIconPath : editIconPath}]
         })
+    }
+    /**  Get the can edit option for the diagram.
+     * @returns {boolean}
+     */
+    static get canEdit() {
+        return this.#canEdit
+    }
+    /** Set the can edit option for the diagram.
+     * @param {boolean} value
+     */
+    static set canEdit(value) {
+        this.#canEdit = value
+
+        if (value) {
+            $('#edit-options-icon-button').show(300)
+        } else {
+            $('#edit-options-icon-button').hide(300)
+            this.edit = value
+        }
     }
 
     /** Add an item to the diagram.
